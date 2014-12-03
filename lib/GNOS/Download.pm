@@ -21,17 +21,16 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGE: run_uplaod($command, $file, $retries);                                             #
+# USAGEa: run_upload($command, $file, $retries, $cooldown, $md5_sleep);                     #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
-my $md5_sleep= 240;
-my $cooldown = 60;
-
 sub run_download {
-    my ($class, $command, $file, $retries) = @_;
+    my ($class, $command, $file, $retries, $cooldown, $md5_sleep) = @_;
 
     $retries //= 30;
+    $md5_sleep //= 240;
+    $cooldown //= 60;
 
     my $thr = threads->create(\&launch_and_monitor, $command);
 

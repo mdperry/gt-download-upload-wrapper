@@ -24,22 +24,35 @@ my $md5_sleep = 240;
 #############################################################################################
 #  This module is wraps the gtupload script and retries the downloads if it freezes up.     #
 #############################################################################################
-# USAGE: run_upload($command, $metadata_file, $retries);                                    #
+# USAGE: run_upload($command, $log_file, $retries, $cooldown, $md5_sleep);                  #
 #        Where $command is the full gtupload command                                        #
 #############################################################################################
 
 sub run_upload {
-    my ($class, $command, $metadata_file, $retries) = @_;
+    my ($class, $command, $log_file, $retries, $cooldown, $md5_sleep) = @_;
 
     $retries //=30;
+    $cooldown //= 60;
+    $md5_sleep //= 240;
     say "CMD: $command";
 
     my $thr = threads->create(\&launch_and_monitor, $command);
     my $count = 0;
+    my $completed = 0;
 
-    while((not -e $metadata_file) or (not `cat $metadata_file` =~ /OK/)) {
+    do {
         sleep $cooldown;
-        if (not $thr->is_running()) {
+         
+        #check if upload completed
+        
+        open my $fh, '<', $log_file;
+        my @lines = <$fh>;
+        close $fh;
+
+        if ( {grep {/(100.000% complete)/s} @lines} ) {
+            $completed = 1;
+        }
+        elsif (not $thr->is_running()) {
             if (++$count < $retries ) {
                 say 'KILLING THE THREAD!!';
                 # kill and wait to exit
@@ -52,7 +65,7 @@ sub run_upload {
                 exit 1;
             }
         }
-    }
+    } while (not $completed);
 
     say "Total number of attempts: $count";
     say 'DONE';
