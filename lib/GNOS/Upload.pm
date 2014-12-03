@@ -5,6 +5,7 @@ use strict;
 
 use feature qw(say);
 use autodie;
+use Carp qw( croak );
 
 use Config;
 $Config{useithreads} or croak('Recompile Perl with threads to run this program.');
@@ -16,7 +17,6 @@ use constant {
 };
 
 my $cooldown = 60;
-my $retries = 30;
 my $md5_sleep = 240;
 
 #############################################################################################
@@ -24,40 +24,41 @@ my $md5_sleep = 240;
 #############################################################################################
 #  This module is wraps the gtupload script and retries the downloads if it freezes up.     #
 #############################################################################################
-# USAGE: run_upload($command, $metadata_file); Where $command is the full gtupload command  #
+# USAGE: run_upload($command, $metadata_file, $retries);                                    #
+#        Where $command is the full gtupload command                                        #
 #############################################################################################
 
 sub run_upload {
-    my ($class, $command, $metadata_file) = @_;
+    my ($class, $command, $metadata_file, $retries) = @_;
 
+    $retries //=30;
     say "CMD: $command";
 
     my $thr = threads->create(\&launch_and_monitor, $command);
-    my $count = 1;
-    while(1) {
+    my $count = 0;
+
+    while((not -e $metadata_file) or (not `cat $metadata_file` =~ /OK/)) {
         sleep $cooldown;
         if (not $thr->is_running()) {
-            if ((-e $metadata_file) and (`cat $metadata_file` =~ /OK/)) {
-                say "Total number of attempts: $count";
-                say 'DONE';
-                $thr->join() if ($thr->is_running());
-                exit;
+            if (++$count < $retries ) {
+                say 'KILLING THE THREAD!!';
+                # kill and wait to exit
+                $thr->kill('KILL')->join();
+                $thr = threads->create(\&launch_and_monitor, $command);
+                sleep $md5_sleep;
             }
             else {
-                $count++;
-                if ($count <= $retries ) {
-                    say 'KILLING THE THREAD!!';
-                    # kill and wait to exit
-                    $thr->kill('KILL')->join();
-                    $thr = threads->create(\&launch_and_monitor, $command);
-                    sleep $md5_sleep;
-                }
-                else {
-                   exit 1;
-                }
+                say "Surpassed the number of retries: $retries";
+                exit 1;
             }
         }
     }
+
+    say "Total number of attempts: $count";
+    say 'DONE';
+    $thr->join() if ($thr->is_running());
+ 
+    return;
 }
 
 sub launch_and_monitor {
@@ -73,7 +74,6 @@ sub launch_and_monitor {
     #system($cmd);
     my $pid = open my $in, '-|', "$command 2>&1";
     
-    my $milliseconds_in_an_hour = 3600000;
     my $time_last_uploading = time;
     my $last_reported_uploaded = 0;
     while(<$in>) {
