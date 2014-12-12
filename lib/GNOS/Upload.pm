@@ -91,7 +91,7 @@ sub launch_and_monitor {
     my $last_reported_uploaded = 0;
     while(<$in>) {
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
-        if ($uploaded > $last_reported_uploaded) {
+        if ((defined $uploaded) and ($uploaded > $last_reported_uploaded)) {
             $time_last_uploading = time;
         }
         elsif ( (time - $time_last_uploading) > MILLISECONDS_IN_AN_HOUR) {
