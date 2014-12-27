@@ -42,9 +42,9 @@ sub run_upload {
 
     do {
         sleep $cooldown;
-         
+
         #check if upload completed
-        
+
         open my $fh, '<', $log_file;
         my @lines = <$fh>;
         close $fh;
@@ -70,7 +70,7 @@ sub run_upload {
     say "Total number of attempts: $count";
     say 'DONE';
     $thr->join() if ($thr->is_running());
- 
+
     return;
 }
 
@@ -86,12 +86,12 @@ sub launch_and_monitor {
     # system doesn't work, can't kill it but the open below does allow the sub-process to be killed
     #system($cmd);
     my $pid = open my $in, '-|', "$command 2>&1";
-    
+
     my $time_last_uploading = time;
     my $last_reported_uploaded = 0;
     while(<$in>) {
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
-        if ($uploaded > $last_reported_uploaded) {
+        if ((defined $uploaded) and ($uploaded > $last_reported_uploaded)) {
             $time_last_uploading = time;
         }
         elsif ( (time - $time_last_uploading) > MILLISECONDS_IN_AN_HOUR) {

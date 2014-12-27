@@ -21,16 +21,18 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGEa: run_upload($command, $file, $retries, $cooldown, $md5_sleep);                     #
+# USAGE: run_upload($command, $file, $retries, $cooldown_min, $timeout_hours);              #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
 sub run_download {
-    my ($class, $command, $file, $retries, $cooldown, $md5_sleep) = @_;
+    my ($class, $command, $file, $retries, $cooldown_min, $timeout_hours) = @_;
 
     $retries //= 30;
-    $md5_sleep //= 240;
+    $timeout //= 1;
     $cooldown //= 60;
+
+    my $timeout_mili = $timeout * MILLISECONDS_IN_AN_HOUR;
 
     my $thr = threads->create(\&launch_and_monitor, $command);
 
@@ -38,13 +40,12 @@ sub run_download {
     while( not (-e $file) ) {
         sleep $cooldown;
 
-        if ( not $thr->is_running()) { 
+        if ( not $thr->is_running()) {
             if (++$count < $retries ) {
                 say 'KILLING THE THREAD!!';
                 # kill and wait to exit
                 $thr->kill('KILL')->join();
-                $thr = threads->create(\&launch_and_monitor, $command);
-                sleep $md5_sleep;
+                $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
             }
             else {
                say "Surpassed the number of retries: $retries";
@@ -56,12 +57,12 @@ sub run_download {
     say "Total number of tries: $count";
     say 'DONE';
     $thr->join() if ($thr->is_running());
-    
+
     return 1;
 }
 
 sub launch_and_monitor {
-    my ($command) = @_;
+    my ($command, $timeout) = @_;
 
     my $my_object = threads->self;
     my $my_tid = $my_object->tid;
@@ -74,13 +75,26 @@ sub launch_and_monitor {
 
     my $time_last_downloading = 0;
     my $last_reported_size = 0;
-    while(<$in>) { 
+    while(<$in>) {
+
+        # just print the output for debugging reasons
+        print "$_";
+
+        # these will be defined if the program is actively downloading
         my ($size, $percent, $rate) = $_ =~ m/^Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g;
 
-        if ($size > $last_reported_size) {
+        # test to see if the thread is md5sum'ing after an earlier failure
+        # this actually doesn't produce new lines, it's all on one line but you
+        # need to check since the md5sum can take hours and this would cause a timeout
+        # and a kill when the next download line appears since it could be well past
+        # the timeout limit
+        my $md5sum = 0;
+        if ($_ =~ m/^Download resumed, validating checksums for existing data/g) { $md5sum = 1; } else { $md5sum = 0; }
+
+        if ($size > $last_reported_size || $md5sum) {
             $time_last_downloading = time;
         }
-        elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > MILLISECONDS_IN_AN_HOUR) ) {
+        elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) ) {
             say 'Killing Thread - Timed out '.time;
             exit;
         }
