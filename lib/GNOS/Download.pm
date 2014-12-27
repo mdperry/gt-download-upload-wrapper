@@ -21,18 +21,18 @@ use constant {
 #############################################################################################
 #  This module is wraps the gtdownload script and retries the downloads if it freezes up.   #
 #############################################################################################
-# USAGE: run_upload($command, $file, $retries, $cooldown_sec, $timeout_hours);              #
+# USAGE: run_upload($command, $file, $retries, $cooldown_min, $timeout_min);                #
 #        Where the command is the full gtdownlaod command                                   #
 #############################################################################################
 
 sub run_download {
-    my ($class, $command, $file, $retries, $cooldown_sec, $timeout_hours) = @_;
+    my ($class, $command, $file, $retries, $cooldown_min, $timeout_min) = @_;
 
     $retries //= 30;
-    $timeout_hours //= 1;
-    $cooldown_sec //= 60;
+    $timeout_min //= 60;
+    $cooldown_min //= 1;
 
-    my $timeout_mili = $timeout_hours * MILLISECONDS_IN_AN_HOUR;
+    my $timeout_mili = ($timeout_min / 60) * MILLISECONDS_IN_AN_HOUR;
 
     my $thr = threads->create(\&launch_and_monitor, $command);
 
@@ -52,7 +52,7 @@ sub run_download {
             }
         }
 
-        sleep $cooldown_sec;
+        sleep $cooldown_min;
     }
 
     say "Total number of tries: $count";
