@@ -82,6 +82,10 @@ sub launch_and_monitor {
         print "$_";
 
         # these will be defined if the program is actively downloading
+	my ($size, $percent, $rate);
+	$size = 0;
+	$percent = 0;
+	$rate = 0;
         my ($size, $percent, $rate) = $_ =~ m/^Status:\s*(\d+.\d+|\d+|\s*)\s*[M|G]B\s*downloaded\s*\((\d+.\d+|\d+|\s)%\s*complete\)\s*current rate:\s+(\d+.\d+|\d+| )\s+MB\/s/g;
 
         # test to see if the thread is md5sum'ing after an earlier failure
