@@ -92,7 +92,7 @@ sub launch_and_monitor {
         my $md5sum = 0;
         if ($_ =~ m/^Download resumed, validating checksums for existing data/g) { $md5sum = 1; } else { $md5sum = 0; }
 
-        if ((defined($size) && $size > $last_reported_size) || $md5sum) {
+        if ((defined($size) &&  defined($last_reported_size) && $size > $last_reported_size) || $md5sum) {
             $time_last_downloading = time;
         }
         elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) ) {
