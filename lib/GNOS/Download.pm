@@ -35,7 +35,7 @@ sub run_download {
     my $timeout_mili = ($timeout_min / 60) * MILLISECONDS_IN_AN_HOUR;
     my $cooldown_sec = $cooldown_min * 60;
 
-    say "TIMEOUT: min $timeout_min milli $timeout_mili";die;
+    say "TIMEOUT: min $timeout_min milli $timeout_mili";
 
     my $thr = threads->create(\&launch_and_monitor, $command);
 
@@ -47,7 +47,7 @@ sub run_download {
                 say 'ERROR: THREAD NOT RUNNING BUT OUTPUT MISSING, RESTARTING THE THREAD!!';
                 # kill and wait to exit
                 $thr->kill('KILL')->join();
-                $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
+                $thr = threads->create(\&launch_and_monitor, $timeout_mili, $command);
             }
             else {
                say "ERROR: Surpassed the number of retries: $retries with count $count, EXITING!!";
