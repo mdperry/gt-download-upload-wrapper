@@ -30,10 +30,10 @@ sub run_download {
 
     $retries //= 30;
     $timeout_min //= 60;
-    $cooldown //= 1;
+    $cooldown_min //= 1;
 
     my $timeout_mili = ($timeout_min / 60) * MILLISECONDS_IN_AN_HOUR;
-    my $cooldown_min = $cooldown * 60;
+    my $cooldown_sec = $cooldown_min * 60;
 
     my $thr = threads->create(\&launch_and_monitor, $command);
 
@@ -53,7 +53,7 @@ sub run_download {
             }
         }
 
-        sleep $cooldown_min;
+        sleep $cooldown_sec;
     }
 
     say "OUTPUT FILE $file EXISTS AND THREAD EXITED NORMALLY, Total number of tries: $count";
