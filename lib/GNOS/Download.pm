@@ -47,7 +47,7 @@ sub run_download {
                 say 'ERROR: THREAD NOT RUNNING BUT OUTPUT MISSING, RESTARTING THE THREAD!!';
                 # kill and wait to exit
                 $thr->kill('KILL')->join();
-                $thr = threads->create(\&launch_and_monitor);
+                $thr = threads->create(\&launch_and_monitor, $command, 3600000);
             }
             else {
                say "ERROR: Surpassed the number of retries: $retries with count $count, EXITING!!";
