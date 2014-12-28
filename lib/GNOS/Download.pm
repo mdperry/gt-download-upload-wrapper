@@ -38,16 +38,16 @@ sub run_download {
 
     my $count = 0;
     while( not (-e $file) ) {
-
+        say "FILE: $file DOES NOT EXIST... WAITING FOR THREAD TO COMPLETE...";
         if ( not $thr->is_running()) {
             if (++$count < $retries ) {
-                say 'KILLING THE THREAD!!';
+                say 'ERROR: THREAD NOT RUNNING BUT OUTPUT MISSING, RESTARTING THE THREAD!!';
                 # kill and wait to exit
                 $thr->kill('KILL')->join();
                 $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
             }
             else {
-               say "Surpassed the number of retries: $retries";
+               say "ERROR: Surpassed the number of retries: $retries with count $count, EXITING!!";
                exit 1;
             }
         }
@@ -55,7 +55,7 @@ sub run_download {
         sleep $cooldown_min;
     }
 
-    say "Total number of tries: $count";
+    say "OUTPUT FILE $file EXISTS AND THREAD EXITED NORMALLY, Total number of tries: $count";
     say 'DONE';
     $thr->join() if ($thr->is_running());
 
@@ -71,6 +71,8 @@ sub launch_and_monitor {
     local $SIG{KILL} = sub { say "GOT KILL FOR THREAD: $my_tid";
                              threads->exit;
                            };
+
+    say "THREAD STARTING, CMD: $command";
 
     my $pid = open my $in, '-|', "$command 2>&1";
 
@@ -94,9 +96,11 @@ sub launch_and_monitor {
 
         if ((defined($size) &&  defined($last_reported_size) && $size > $last_reported_size) || $md5sum) {
             $time_last_downloading = time;
+            say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
+            say "  LAST REPORTED SIZE $last_reported_size SIZE: $size IS MD5Sum State: $md5sum";
         }
         elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) ) {
-            say 'Killing Thread - Timed out '.time;
+            say 'ERROR: Killing Thread - Timed out '.time;
             exit;
         }
         $last_reported_size = $size;
