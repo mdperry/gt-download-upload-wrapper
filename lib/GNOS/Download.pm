@@ -37,7 +37,7 @@ sub run_download {
 
     say "TIMEOUT: min $timeout_min milli $timeout_mili";
 
-    my $thr = threads->create(\&launch_and_monitor, $command);
+    my $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
 
     my $count = 0;
     while( not (-e $file) ) {
@@ -47,7 +47,7 @@ sub run_download {
                 say 'ERROR: THREAD NOT RUNNING BUT OUTPUT MISSING, RESTARTING THE THREAD!!';
                 # kill and wait to exit
                 $thr->kill('KILL')->join();
-                $thr = threads->create(\&launch_and_monitor);
+                $thr = threads->create(\&launch_and_monitor, $command, $timeout_mili);
             }
             else {
                say "ERROR: Surpassed the number of retries: $retries with count $count, EXITING!!";
