@@ -100,7 +100,8 @@ sub launch_and_monitor {
         if ((defined($size) &&  defined($last_reported_size) && $size > $last_reported_size) || $md5sum) {
             $time_last_downloading = time;
             say "UPDATING LAST DOWNLOAD TIME: $time_last_downloading";
-            say "  LAST REPORTED SIZE $last_reported_size SIZE: $size IS MD5Sum State: $md5sum";
+            if (defined($last_reported_size) && defined($size)) { say "  LAST REPORTED SIZE $last_reported_size SIZE: $size"; }
+            if (defined($md5sum)) { say "  IS MD5Sum State: $md5sum"; }
         }
         elsif (($time_last_downloading != 0) and ( (time - $time_last_downloading) > $timeout) ) {
             say 'ERROR: Killing Thread - Timed out '.time;
