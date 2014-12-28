@@ -73,7 +73,7 @@ sub launch_and_monitor {
                              threads->exit;
                            };
 
-    say "THREAD STARTING, CMD: $command";
+    say "THREAD STARTING, CMD: $command TIMEOUT: $timeout";
 
     my $pid = open my $in, '-|', "$command 2>&1";
 
