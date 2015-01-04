@@ -104,8 +104,7 @@ sub launch_and_monitor {
 
         my ($uploaded, $percent, $rate) = $_ =~ m/^Status:\s+(\d+.\d+|\d+| )\s+[M|G]B\suploaded\s*\((\d+.\d+|\d+| )%\s*complete\)\s*current\s*rate:\s*(\d+.\d+|\d+| )\s*[M|k]B\/s/g;
 
-        my $md5sum = 0;
-        if ($_ =~ m/^Download resumed, validating checksums for existing data/g) { $md5sum = 1; } else { $md5sum = 0; }
+        my $md5sum = ($_ =~ m/^Download resumed, validating checksums for existing data/g)? 1: 0;
 
         if ((defined($percent) && defined($last_reported_uploaded) && $percent > $last_reported_uploaded) || $md5sum) {
             $time_last_uploading = time;

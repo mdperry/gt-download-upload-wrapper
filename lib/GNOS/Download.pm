@@ -97,8 +97,7 @@ sub launch_and_monitor {
         # need to check since the md5sum can take hours and this would cause a timeout
         # and a kill when the next download line appears since it could be well past
         # the timeout limit
-        my $md5sum = 0;
-        if ($_ =~ m/^Download resumed, validating checksums for existing data/g) { $md5sum = 1; } else { $md5sum = 0; }
+        my $md5sum = ($_ =~ m/^Download resumed, validating checksums for existing data/g)? 1: 0;
 
         if ((defined($size) &&  defined($last_reported_size) && $size > $last_reported_size) || $md5sum) {
             $time_last_downloading = time;
