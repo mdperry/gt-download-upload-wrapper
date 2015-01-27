@@ -43,6 +43,8 @@ sub run_upload {
     my $completed = 0;
 
     do {
+       
+       sleep $cooldown_sec; # For first time this will give enough buffer to make sure the file has time to be created.
 
         #check if upload completed
 
@@ -66,8 +68,6 @@ sub run_upload {
                 exit 1;
             }
         }
-
-        sleep $cooldown_sec;
 
     } while (not $completed);
 
